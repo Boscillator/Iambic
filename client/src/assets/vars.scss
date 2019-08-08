@@ -1,0 +1,13 @@
+$margin: 4px;
+$wide-margin: 10 * $margin;
+$padding: 6px;
+$wide-padding: 10 * $padding;
+
+$fonts: 'IM Fell English', serif;
+
+
+%block-base {
+  display: block;
+  padding: $padding;
+  margin: 0px $margin $margin;
+}
