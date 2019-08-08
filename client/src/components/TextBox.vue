@@ -17,11 +17,11 @@
         props: {
             value: String,
             rows: {
-                type: Number,
+                type: String,
                 default: 4
             },
             cols: {
-                type: Number,
+                type: String,
                 default: 30
             }
         },
