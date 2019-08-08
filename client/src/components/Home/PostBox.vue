@@ -1,20 +1,38 @@
 <template>
     <div>
         <TextBox v-model="body" rows="10"/>
-        <Button label="Post!" />
+        <Button :disabled="loading" @click="post" label="Post!"/>
     </div>
 </template>
 
 <script>
     import TextBox from "../TextBox";
     import Button from "../Button";
+    import {mapState} from "vuex";
+
     export default {
         components: {Button, TextBox},
         data() {
-            return {
-                body:''
-            }
+            return {}
+        },
+        computed: {
+            body: {
+                get() {
+                    return this.$store.state.workingPost.body
+                },
+                set(value) {
+                    this.$store.commit('updateWorkingBody', value)
+                }
+            },
+            ...mapState({
+                loading: state => state.workingPost.loading,
+            })
+    },
+    methods: {
+        post() {
+            this.$store.dispatch("postMessage");
         }
+    }
     }
 </script>
 

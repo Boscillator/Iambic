@@ -1,11 +1,17 @@
 <template>
-    <button @click="clicked">{{label}}</button>
+    <button :disabled="disabled" @click="clicked">{{label}}</button>
 </template>
 
 <script>
     export default {
         name: "Button",
-        props: ["label"],
+        props: {
+            label: String,
+            disabled: {
+                type: Boolean,
+                default: false
+            }
+        },
         methods: {
             clicked() {
                 this.$emit('click')
