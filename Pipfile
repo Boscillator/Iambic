@@ -5,8 +5,11 @@ name = "pypi"
 
 [packages]
 flask = "*"
+flask-sqlalchemy = "*"
+flask-restful = "*"
 
 [dev-packages]
+pytest = "*"
 
 [requires]
 python_version = "3.6"
