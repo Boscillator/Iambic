@@ -1,7 +1,9 @@
 import json
 
 from .fixtures import *
+
 from iambic.models import Post
+
 
 def test_create(app, test_client):
     """
@@ -24,3 +26,11 @@ def test_create(app, test_client):
     with app.app_context():
         assert Post.query.get(1).body == 'Shall I compare thee to a summer\'s day?'
 
+
+def test_get(test_client):
+    resp = test_client.get('/posts')
+    resp = json.loads(resp.data)
+
+    assert resp == [
+        {'body': 'Shall I compare thee to a summer\'s day?'}
+    ]

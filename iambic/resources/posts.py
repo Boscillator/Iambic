@@ -12,6 +12,10 @@ post_marshal = {
 class PostsListResource(Resource):
 
     @marshal_with(post_marshal)
+    def get(self):
+        return Post.query.all(), 200
+
+    @marshal_with(post_marshal)
     def post(self):
         args = post_parser.parse_args()
         p = Post(body=args['body'])
