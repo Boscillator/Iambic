@@ -1,7 +1,6 @@
 import json
 
 from .fixtures import *
-
 from iambic.models import Post
 
 

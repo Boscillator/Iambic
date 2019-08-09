@@ -1,4 +1,5 @@
 class Base:
+    DICTIONARY_PATH = 'data/cmudict-0.7b.txt'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 
