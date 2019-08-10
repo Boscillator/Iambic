@@ -1,5 +1,7 @@
 from flask_restful import Resource, reqparse, marshal_with, fields
 from ..models import db, Post
+from ..logic import validator
+from ..exceptions import InvalidPoemError
 
 import logging
 
@@ -23,6 +25,10 @@ class PostsListResource(Resource):
     @marshal_with(post_marshal)
     def post(self):
         args = post_parser.parse_args()
+
+        if not validator.is_stanza_iambic(args['body']):
+            raise InvalidPoemError()
+
         p = Post(body=args['body'])
         db.session.add(p)
         db.session.commit()

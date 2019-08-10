@@ -15,6 +15,12 @@ def create_app(config_class: str):
     from .models import db
     db.init_app(app)
 
+    from .exceptions import register_handlers
+    register_handlers(app)
+
+    from .logic import validator
+    validator.load(app.config['DICTIONARY_PATH'])
+
     logging.basicConfig(level=app.config['LOGGING_LEVEL'])
 
     @app.route('/')

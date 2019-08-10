@@ -195,3 +195,7 @@ class IambicValidator:
     def is_stanza_iambic(self, stanza: str):
         sentences = stanza.strip().splitlines()
         return all(self.is_iambic(sentence) for sentence in sentences)
+
+
+# Create a singleton instance to use in the real application. Load is called by create_app
+validator = IambicValidator()
