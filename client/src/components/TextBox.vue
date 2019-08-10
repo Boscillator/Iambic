@@ -18,11 +18,11 @@
             value: String,
             rows: {
                 type: String,
-                default: 4
+                default: "4"
             },
             cols: {
                 type: String,
-                default: 30
+                default: "30"
             }
         },
         methods: {
