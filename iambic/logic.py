@@ -23,6 +23,14 @@ class SyllableType(enum.Enum):
             return SyllableType.ANY
         return self
 
+    def __invert__(self):
+        if self == SyllableType.UNSTRESSED:
+            return SyllableType.STRESSED
+        elif self == SyllableType.STRESSED:
+            return SyllableType.UNSTRESSED
+        else:
+            return SyllableType.ANY
+
 
 def _build_accent_pattern_from_phonemes(phonemes) -> Tuple[SyllableType, ...]:
     """
@@ -45,6 +53,28 @@ def _build_accent_pattern_from_phonemes(phonemes) -> Tuple[SyllableType, ...]:
 
     return tuple(result)
 
+def _pairwise(iterable):
+    """
+    s -> (s0,s1), (s1,s2), (s2, s3), ...
+    https://stackoverflow.com/a/5764807
+    """
+    a, b = itertools.tee(iterable)
+    next(b, None)
+    return zip(a, b)
+
+def _is_iambicable(accent_pattern):
+    """
+    Returns True if an accent pattern could ever appear in an iambic pentameter sentance.
+    (if the word has no same syllables in a row)
+    """
+
+    for s1, s2 in _pairwise(accent_pattern):
+        # 2 of the same accent in a row (and not any)
+        if s1 == s2 and s1 != SyllableType.ANY:
+            return False
+
+    return True
+
 
 class Pronunciation:
 
@@ -56,38 +86,28 @@ class Pronunciation:
         """
         self.phonemes = phonemes
         self.accent_pattern = _build_accent_pattern_from_phonemes(self.phonemes)
+        self.valid = _is_iambicable(self.accent_pattern)
 
-    def update(self, phonemes):
-        """
-        Add an alternative pronunciation
-        :param phonemes: List of phonemes in cmudict format
-        """
-        new_pattern = _build_accent_pattern_from_phonemes(phonemes)
-        # change the new accent pattern to be any where different pronunciations disagree
-        self.accent_pattern = tuple(a.generalize(b) for a, b in zip(new_pattern, self.accent_pattern))
+
+    @property
+    def start_state(self):
+        return self.accent_pattern[0]
+
+    @property
+    def n_transitions(self):
+        return len(self.accent_pattern)
 
     def __repr__(self):
         return f'<Pronunciation {",".join(self.phonemes)}>'
 
-def match(a: Tuple[SyllableType,...], b: Tuple[SyllableType,...]) -> bool:
-    """
-    Return true if two accent patterns are equivalent
-    """
-
-    if len(a) != len(b):
-        # Sentences cannot have the same accent pattern if they have a different number of syllables
-        return False
-
-    for s1, s2 in zip(a,b):
-        # Only fail when a,b are unequal and neither is ANY
-        if s1 != s2 and s1 != SyllableType.ANY and s2 != SyllableType.ANY:
-            return False
-    return True
+def _is_valid_transition(pronunciation: Pronunciation, state: SyllableType):
+    print(f"_is_valid_transition with {','.join(pronunciation.phonemes)} on state {state}")
+    return pronunciation.start_state != state
 
 class IambicValidator:
 
     def __init__(self):
-        self.dictionary: Dict[str, Pronunciation] = {}
+        self.dictionary: Dict[str, List[Pronunciation]] = defaultdict(list)
 
     def load(self, path):
         dict_file = open(path)
@@ -105,20 +125,65 @@ class IambicValidator:
             key = key.split('(')[0]  # Ignore differentiators for alternate pronunciations
             # they are handled by a list of Pronunciations
             pronunciation = tokens[1:]
+            self.dictionary[key].append(Pronunciation(pronunciation))
 
-            if key not in self.dictionary:
-                self.dictionary[key] = Pronunciation(pronunciation)
+    def _is_iambic(self, words, state = SyllableType.STRESSED, n_syllables = 0):
+
+        print(f"_is_iambic({words}, {state}, {n_syllables})")
+
+        # OK. Here is the thinking. Iambic pentameter can be validated using a non-finite state machine. There are
+        # the two states, STRESSED and UNSTRESSED. The sentence must have 10 syllables, and we must end on a
+        # STRESSED state. Each possible pronunciation of a word represents a transition between the stressed and
+        # unstressed states. If it has two of the same syllable in a row, the sentence is rejected. If it has an
+        # odd number of syllables, the state switches. If it has an even number of syllables, the state remains the
+        # same.
+
+        if n_syllables != 10 and len(words) == 0:
+            # More or less then 10 syllables
+            print("More or less than 10 syllables")
+            return False
+
+        if n_syllables == 10 and len(words) == 0:
+            # Correct number of syllables, NFA has consumed all input
+            print("Accepted iambic pentameter")
+            return True
+
+        current = words[0]
+        pronunciations = self.dictionary[current]
+        any_ok = False  # Store if any branch of the NFA has found an accept state
+        for pronunciation in pronunciations:
+            # if not pronunciation.valid:
+            #     # Turns out if you leave this rule in, Sonnet 18 breaks, and I don't want to break it
+            #     # Double syllable somewhere in the word, reject.
+            #     print("Double syllable in word")
+            #     print(pronunciation)
+            #     continue
+            if not _is_valid_transition(pronunciation, state):
+                # Double syllable between last word and current, reject.
+                print("Double syllables between words")
+                continue
+
+            if pronunciation.n_transitions % 2 == 1:
+                new_state = ~state
             else:
-                self.dictionary[key].update(pronunciation)
+                new_state = state
+            new_words = words[1:]   # Recur with current word consumed
+            new_n_syllables = n_syllables + pronunciation.n_transitions
+            any_ok |= self._is_iambic(new_words, new_state, new_n_syllables)
+
+            if any_ok:
+                # Return early if accept state is found, otherwise keep looking
+                return True
+
+        return any_ok
+
 
     def is_iambic(self, sentence: str):
         sentence = sentence.translate(str.maketrans('', '', PUNCTUATION))
         sentence = sentence.upper()
         sentence = sentence.split()
-        sentence = tuple(itertools.chain(*[self.dictionary[word].accent_pattern for word in sentence]))
-        print("")
-        print(sentence)
+        return self._is_iambic(sentence)
 
-        pattern = 5*(SyllableType.UNSTRESSED, SyllableType.STRESSED)    # 5 Iambs
-        return match(sentence, pattern)
-
+    def is_stanza_iambic(self, stanza: str):
+        sentences = stanza.strip().splitlines()
+        return all(self.is_iambic(sentence) for sentence in sentences)
