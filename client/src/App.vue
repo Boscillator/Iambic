@@ -62,5 +62,6 @@
 
   #app {
     font-family: $fonts;
+    font-size: $font-size;
   }
 </style>
