@@ -1,6 +1,7 @@
 <template>
     <div class="post">
-        {{post.body}}
+        <div>{{post.body}}</div>
+        <div class="created-at">{{post.created_at}}</div>
     </div>
 </template>
 
@@ -21,5 +22,11 @@
         margin: $margin auto;
 
         box-shadow: 1px 1px 1px 1px $shadow;
+    }
+
+    .created-at {
+        margin-top: $margin;
+        text-align: right;
+        font-size: 12pt;
     }
 </style>

@@ -12,6 +12,7 @@ post_parser.add_argument('body')
 
 post_marshal = {
     'body': fields.String,
+    'created_at': fields.DateTime
 }
 
 
