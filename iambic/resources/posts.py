@@ -21,7 +21,7 @@ class PostsListResource(Resource):
     @marshal_with(post_marshal)
     def get(self):
         logger.info("Fetching list of posts.")
-        return Post.query.all(), 200
+        return Post.query.order_by(Post.created_at.desc()).all(), 200
 
     @marshal_with(post_marshal)
     def post(self):
