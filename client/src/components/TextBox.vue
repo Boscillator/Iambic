@@ -27,7 +27,7 @@
         },
         methods: {
             input(event) {
-                this.$emit('input', event.target.parameters)
+                this.$emit('input', event.target.value)
             }
         }
     }

@@ -6,10 +6,28 @@
       </nav>
     </header>
     <main>
+      <div id="error-box" v-bind:class="{'hide': !showError}">
+        {{error}}
+      </div>
       <router-view/>
     </main>
   </div>
 </template>
+
+<script>
+  import {mapState} from "vuex";
+
+  export default {
+    computed: {
+      showError() {
+        return this.error !== ""
+      },
+      ...mapState({
+        error: state => state.error
+      })
+    }
+  }
+</script>
 
 <style lang="scss">
   @import "assets/vars.scss";
@@ -21,10 +39,20 @@
       margin-left: $margin;
       margin-right: $wide-margin;
     }
+
   }
   main {
     margin: auto;
     max-width: 720px;
+  }
+
+  #error-box {
+    @extend %block-base;
+    border: 1px solid $warn;
+  }
+
+  .hide {
+    display: none !important;
   }
 
   nav {

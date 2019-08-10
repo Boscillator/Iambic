@@ -1,6 +1,6 @@
 import click
-from iambic import app, db
-from iambic.models import Post
+from iambic import create_app
+from iambic.models import db, Post
 
 @click.group()
 def cli():
@@ -10,8 +10,9 @@ def cli():
 @click.command()
 def initdb():
     click.echo("Creating Fresh Database")
-    db.create_all()
-    click.echo(f"Database Created at {app.config['SQLALCHEMY_DATABASE_URI']}")
+    app = create_app('development')
+    with app.app_context():
+        db.create_all()
 
 @click.command()
 @click.argument('body')
