@@ -43,7 +43,7 @@
   }
   main {
     margin: auto;
-    max-width: 720px;
+    max-width: $max-width;
   }
 
   #error-box {

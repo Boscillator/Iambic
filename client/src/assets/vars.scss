@@ -1,15 +1,18 @@
-$margin: 4px;
+$max-width: 720px;
+
+$margin: 10px;
 $wide-margin: 10 * $margin;
 $padding: 6px;
 $wide-padding: 10 * $padding;
 
 $fonts: 'IM Fell English', serif;
 
+$shadow: #CCC;
 $warn: red;
 
 
 %block-base {
   display: block;
   padding: $padding;
-  margin: 0px $margin $margin;
+  margin: 0 $margin $margin;
 }

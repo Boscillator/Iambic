@@ -9,6 +9,7 @@ const ERROR_DISPLAY_TIME = 3000;
 export default new Vuex.Store({
     state: {
         error: "",
+        posts: [],
         workingPost: {
             body: "",   //The body of the post currently being composed
             loading: false  //True if a post is currently being sent to the server
@@ -31,13 +32,15 @@ export default new Vuex.Store({
         },
         clearError(state) {
             state.error = "";
+        },
+        receivedPosts(state, posts) {
+            state.posts = posts;
         }
     },
     actions: {
         async postMessage(context) {
             context.commit("setSendingPost");
             try {
-                console.log(context.state.workingPost.body)
                 let resp = await axios.post('/posts', {
                     'body': context.state.workingPost.body
                 });
@@ -48,8 +51,18 @@ export default new Vuex.Store({
         },
 
         displayError(context, error) {
+            console.error(error);
             context.commit('setError', error);
             setTimeout(() => context.commit('clearError'), ERROR_DISPLAY_TIME);
+        },
+
+        async fetchPosts(context) {
+            try {
+                let resp = await axios.get('/posts');
+                context.commit("receivedPosts", resp.data);
+            } catch (error) {
+                context.dispatch('displayError', error.response.data.message);
+            }
         }
     }
 })
