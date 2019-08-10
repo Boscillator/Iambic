@@ -1,8 +1,12 @@
 import itertools
+import time
 from collections import defaultdict
 from typing import Dict, List, Iterable, Tuple, Set
 import string
 import enum
+import logging
+
+logger = logging.getLogger(__name__)
 
 # We need to remove all punctuation except for apostrophes (because they change pronunciation)
 PUNCTUATION = string.punctuation.replace('\'', '')
@@ -101,7 +105,7 @@ class Pronunciation:
         return f'<Pronunciation {",".join(self.phonemes)}>'
 
 def _is_valid_transition(pronunciation: Pronunciation, state: SyllableType):
-    print(f"_is_valid_transition with {','.join(pronunciation.phonemes)} on state {state}")
+    logger.debug(f"_is_valid_transition with {','.join(pronunciation.phonemes)} on state {state}")
     return pronunciation.start_state != state
 
 class IambicValidator:
@@ -129,7 +133,7 @@ class IambicValidator:
 
     def _is_iambic(self, words, state = SyllableType.STRESSED, n_syllables = 0):
 
-        print(f"_is_iambic({words}, {state}, {n_syllables})")
+        logger.debug(f"_is_iambic({words}, {state}, {n_syllables})")
 
         # OK. Here is the thinking. Iambic pentameter can be validated using a non-finite state machine. There are
         # the two states, STRESSED and UNSTRESSED. The sentence must have 10 syllables, and we must end on a
@@ -140,12 +144,12 @@ class IambicValidator:
 
         if n_syllables != 10 and len(words) == 0:
             # More or less then 10 syllables
-            print("More or less than 10 syllables")
+            logger.debug("More or less than 10 syllables")
             return False
 
         if n_syllables == 10 and len(words) == 0:
             # Correct number of syllables, NFA has consumed all input
-            print("Accepted iambic pentameter")
+            logger.debug("Accepted iambic pentameter")
             return True
 
         current = words[0]
@@ -155,12 +159,12 @@ class IambicValidator:
             # if not pronunciation.valid:
             #     # Turns out if you leave this rule in, Sonnet 18 breaks, and I don't want to break it
             #     # Double syllable somewhere in the word, reject.
-            #     print("Double syllable in word")
-            #     print(pronunciation)
+            #     logger.debug("Double syllable in word")
+            #     logger.debug(pronunciation)
             #     continue
             if not _is_valid_transition(pronunciation, state):
                 # Double syllable between last word and current, reject.
-                print("Double syllables between words")
+                logger.debug("Double syllables between words")
                 continue
 
             if pronunciation.n_transitions % 2 == 1:
@@ -179,9 +183,13 @@ class IambicValidator:
 
 
     def is_iambic(self, sentence: str):
+        t = time.time()
         sentence = sentence.translate(str.maketrans('', '', PUNCTUATION))
         sentence = sentence.upper()
         sentence = sentence.split()
+
+        logging.info(f"Evaluated iambic pentameter for '{sentence}' in {time.time() - t:.2f}s")
+
         return self._is_iambic(sentence)
 
     def is_stanza_iambic(self, stanza: str):

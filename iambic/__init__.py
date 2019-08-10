@@ -1,6 +1,7 @@
 from flask import Flask
 from flask import redirect, url_for
 import os
+import logging
 
 
 # Create flask app and configure it
@@ -13,6 +14,8 @@ def create_app(config_class: str):
 
     from .models import db
     db.init_app(app)
+
+    logging.basicConfig(level=app.config['LOGGING_LEVEL'])
 
     @app.route('/')
     def index():
