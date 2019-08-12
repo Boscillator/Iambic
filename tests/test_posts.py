@@ -20,9 +20,8 @@ def test_create(app, test_client):
     assert resp.status_code == 201
 
     resp = json.loads(resp.data)
-    assert resp == {
-        'body': 'Shall I compare thee to a summer\'s day?'
-    }
+    assert resp['body'] == 'Shall I compare thee to a summer\'s day?'
+    assert resp['created_at']
 
     with app.app_context():
         assert Post.query.get(1).body == 'Shall I compare thee to a summer\'s day?'
@@ -47,6 +46,4 @@ def test_get(test_client):
     resp = test_client.get('/posts')
     resp = json.loads(resp.data)
 
-    assert resp == [
-        {'body': 'Shall I compare thee to a summer\'s day?'}
-    ]
+    assert resp[0]['body'] == 'Shall I compare thee to a summer\'s day?'
