@@ -57,6 +57,7 @@ def _build_accent_pattern_from_phonemes(phonemes) -> Tuple[SyllableType, ...]:
 
     return tuple(result)
 
+
 def _pairwise(iterable):
     """
     s -> (s0,s1), (s1,s2), (s2, s3), ...
@@ -65,6 +66,7 @@ def _pairwise(iterable):
     a, b = itertools.tee(iterable)
     next(b, None)
     return zip(a, b)
+
 
 def _is_iambicable(accent_pattern):
     """
@@ -92,7 +94,6 @@ class Pronunciation:
         self.accent_pattern = _build_accent_pattern_from_phonemes(self.phonemes)
         self.valid = _is_iambicable(self.accent_pattern)
 
-
     @property
     def start_state(self):
         return self.accent_pattern[0]
@@ -104,9 +105,32 @@ class Pronunciation:
     def __repr__(self):
         return f'<Pronunciation {",".join(self.phonemes)}>'
 
+
+class ValidationResult:
+    class Reason(enum.Enum):
+        OK = "Ok."
+        WRONG_NUMBER_OF_SYLLABLES = "Too many syllables."
+        DOUBLE_STRESS = "Two syllables with stress in a row."
+        UNKNOWN_WORD = "Unknown word."
+
+    def __init__(self, ok: bool, at: int, reason: Reason):
+        """
+        :param ok: Does the sentence conform to Iambic Pentameter
+        :param at: What word the failure occurred on.
+        :param reason: Why there was a failure
+        """
+        self.reason = reason
+        self.at = at
+        self.ok = ok
+
+    def __bool__(self):
+        return self.ok
+
+
 def _is_valid_transition(pronunciation: Pronunciation, state: SyllableType):
     logger.debug(f"_is_valid_transition with {','.join(pronunciation.phonemes)} on state {state}")
     return pronunciation.start_state != state
+
 
 class IambicValidator:
 
@@ -131,9 +155,12 @@ class IambicValidator:
             pronunciation = tokens[1:]
             self.dictionary[key].append(Pronunciation(pronunciation))
 
-    def _is_iambic(self, words, state = SyllableType.STRESSED, n_syllables = 0):
+        # Convert from default dict so we get key errors when words are not found.
+        self.dictionary = dict(self.dictionary)
 
-        logger.debug(f"_is_iambic({words}, {state}, {n_syllables})")
+    def _is_iambic(self, words, word_number=0, state=SyllableType.STRESSED, n_syllables=0) -> ValidationResult:
+
+        logger.debug(f"_is_iambic({words}, {word_number}, {state}, {n_syllables})")
 
         # OK. Here is the thinking. Iambic pentameter can be validated using a non-finite state machine. There are
         # the two states, STRESSED and UNSTRESSED. The sentence must have 10 syllables, and we must end on a
@@ -145,16 +172,21 @@ class IambicValidator:
         if n_syllables != 10 and len(words) == 0:
             # More or less then 10 syllables
             logger.debug("More or less than 10 syllables")
-            return False
+            return ValidationResult(False, word_number, ValidationResult.Reason.WRONG_NUMBER_OF_SYLLABLES)
 
         if n_syllables == 10 and len(words) == 0:
             # Correct number of syllables, NFA has consumed all input
             logger.debug("Accepted iambic pentameter")
-            return True
+            return ValidationResult(True, word_number, ValidationResult.Reason.OK)
 
         current = words[0]
-        pronunciations = self.dictionary[current]
-        any_ok = False  # Store if any branch of the NFA has found an accept state
+        try:
+            pronunciations = self.dictionary[current]
+            print(pronunciations)
+        except KeyError:
+            logger.debug(f"Unknown word {current}")
+            return ValidationResult(False, word_number, ValidationResult.Reason.UNKNOWN_WORD)
+        last_error = None
         for pronunciation in pronunciations:
             # if not pronunciation.valid:
             #     # Turns out if you leave this rule in, Sonnet 18 breaks, and I don't want to break it
@@ -165,32 +197,35 @@ class IambicValidator:
             if not _is_valid_transition(pronunciation, state):
                 # Double syllable between last word and current, reject.
                 logger.debug("Double syllables between words")
+                last_error = ValidationResult(False, word_number, ValidationResult.Reason.DOUBLE_STRESS)
                 continue
 
             if pronunciation.n_transitions % 2 == 1:
                 new_state = ~state
             else:
                 new_state = state
-            new_words = words[1:]   # Recur with current word consumed
+            new_words = words[1:]  # Recur with current word consumed
             new_n_syllables = n_syllables + pronunciation.n_transitions
-            any_ok |= self._is_iambic(new_words, new_state, new_n_syllables)
+            new_word_number = word_number + 1
+            last_error = self._is_iambic(new_words, new_word_number, new_state, new_n_syllables)
 
-            if any_ok:
+            if last_error:
                 # Return early if accept state is found, otherwise keep looking
-                return True
+                return last_error
 
-        return any_ok
+        return last_error
 
-
-    def is_iambic(self, sentence: str):
+    def is_iambic(self, sentence: str) -> ValidationResult:
         t = time.time()
         sentence = sentence.translate(str.maketrans('', '', PUNCTUATION))
         sentence = sentence.upper()
         sentence = sentence.split()
 
+        result = self._is_iambic(sentence)
+
         logging.info(f"Evaluated iambic pentameter for '{sentence}' in {time.time() - t:.2f}s")
 
-        return self._is_iambic(sentence)
+        return result
 
     def is_stanza_iambic(self, stanza: str):
         sentences = stanza.strip().splitlines()
