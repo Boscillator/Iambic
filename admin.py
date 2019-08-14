@@ -15,15 +15,14 @@ def initdb():
         db.create_all()
 
 @click.command()
-@click.argument('body')
-def add_post(body):
-    click.echo("Adding Post")
-    p = Post(body=body)
-    db.session.add(p)
-    db.session.commit()
+def run_debug():
+    click.echo("Creating app...")
+    app = create_app('development')
+    click.echo("Running app...")
+    app.run()
 
 
-cli.add_command(add_post)
+cli.add_command(run_debug)
 cli.add_command(initdb)
 
 if __name__ == '__main__':

@@ -172,7 +172,8 @@ class IambicValidator:
         if n_syllables != 10 and len(words) == 0:
             # More or less then 10 syllables
             logger.debug("More or less than 10 syllables")
-            return ValidationResult(False, word_number, ValidationResult.Reason.WRONG_NUMBER_OF_SYLLABLES)
+            # Word number is decremented by one so that the previous (and last) word shows the error.
+            return ValidationResult(False, word_number - 1, ValidationResult.Reason.WRONG_NUMBER_OF_SYLLABLES)
 
         if n_syllables == 10 and len(words) == 0:
             # Correct number of syllables, NFA has consumed all input
@@ -182,7 +183,6 @@ class IambicValidator:
         current = words[0]
         try:
             pronunciations = self.dictionary[current]
-            print(pronunciations)
         except KeyError:
             logger.debug(f"Unknown word {current}")
             return ValidationResult(False, word_number, ValidationResult.Reason.UNKNOWN_WORD)

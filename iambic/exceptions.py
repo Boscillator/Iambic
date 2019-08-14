@@ -1,5 +1,8 @@
 import werkzeug.exceptions
 from flask import jsonify
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class InvalidPoemError(werkzeug.exceptions.HTTPException):
@@ -8,8 +11,8 @@ class InvalidPoemError(werkzeug.exceptions.HTTPException):
 
 
 def register_handlers(app):
-    @app.errorhandler(Exception)
     def handle_error(e):
+        logger.exception(e)
         code = 500
         description = "Something went wrong!"
         if isinstance(e, werkzeug.exceptions.HTTPException):

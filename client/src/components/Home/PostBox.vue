@@ -1,6 +1,6 @@
 <template>
     <div>
-        <TextBox v-model="body" rows="10"/>
+        <TextBox v-model="body" :errors="errors" rows="10"/>
         <Button :disabled="loading" @click="post" label="Post!"/>
     </div>
 </template>
@@ -13,7 +13,8 @@
     export default {
         components: {Button, TextBox},
         data() {
-            return {}
+            return {
+            }
         },
         computed: {
             body: {
@@ -26,6 +27,7 @@
             },
             ...mapState({
                 loading: state => state.workingPost.loading,
+                errors: state => state.workingPost.validationErrors,
             })
     },
     methods: {
